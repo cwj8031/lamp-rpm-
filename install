@@ -1,0 +1,122 @@
+1、环境
+	httpd   centos7  10.10.80.248
+	php     centos7  10.10.80.161
+	mariadb centos7  10.10.80.140
+
+2、安装httpd（10.10.80.248）
+
+	yum  install -y httpd
+
+	简单配置：vim  httpd.conf
+
+		ServerName www.nwc.com
+
+	vim /var/www/html/index.html
+
+	<h1>this is my first test page!</h1>
+
+	check:httpd -t
+
+	start:systemctl start httpd.service
+
+	ss -tnl
+
+	test  http://10.10.80.248
+
+	确保httpd的proxy模块被装载：
+		httpd -M |grep “proxy”
+			proxy_module(shared)
+			proxy_fcgi_module(shared)
+
+3、安装php（10.10.80.161）
+
+	本次演示重点是：httpd与php以fastcgi的方式结合
+	需要安装的包：php-fpm、php-mysql
+
+	yum install -y php-fpm  php-mysql
+
+	简单配置：vim /etc/php-fpm.d/www.conf
+
+		[www]
+		listen = 10.10.80.161:9000   #修改php监听地址，外部可以访问（主要与httpd连接）
+
+		listen.allowed_clients = 10.10.80.248 #修改php允许的客户端（httpd服务器）
+
+	start:systemctl start php-fpm
+
+	ss -tnl
+
+
+4、配置httpd文件，使得其可以连通php
+
+	vim httpd.conf
+
+	#DocumentRoot "/var/www/html"   #将中心主机路径关闭
+
+	vim /etc/httpd/conf.d/vhost.conf
+
+	<VirtualHost *:80>
+        	ServerName www.weijie.com
+        	DocumentRoot "/testdir/www1/"
+        	<Directory "/testdir/www1">
+                	Options None           
+                	AllowOverride None
+                	Require all granted
+        </Directory>
+        ProxyRequests Off                     #httpd扮演的角色是反向代理，所以关闭正向代理
+        ProxypassMatch /(.*\.php)$ fcgi://10.10.80.161:9000/apps/php/$1  #将php请求发往10.10.80.161:9000/apps/php/上
+	</VirtualHost>	
+
+
+	check：httpd -t
+
+	systemctl reload httpd
+
+5、配置php测试页面，进行测试
+
+	mkdir -pv /appa/php
+
+	vim /apps/php/info,php
+
+		<?php phpinfo(); ?>
+
+	
+	test:10.10.80.248/info.php
+
+6、安装mysql（10.10.80.140）
+
+	yum  install mariadb-server
+
+	start:systemctl start mariadb
+
+	mysql_secure_installation   #设置root密码、删除匿名用户、禁止root用户远程登录
+
+	mysql  -uroot -p
+
+	mysql>grant all on *.*  to  'nwc'@'10.10.%.%' identified by '111111';
+
+	flush privileges;
+
+	quit
+7、在php-fpm上测试：
+
+	vim  /apps/php/mysqltest.php
+
+	<h1>
+		Connect Mysql Server :
+		<?php
+			$conn=mysql_connect('10.10.80.140','nwc','111111');
+			if ($conn)
+				echo "Success";
+			else
+				echo"Fail";
+		?>
+	</h1>
+
+
+	
+8、test：10.10.80.248/mysqltest.php
+
+	Connect Mysql Server :Success
+
+
