@@ -62,10 +62,11 @@
                 	Options None           
                 	AllowOverride None
                 	Require all granted
-        </Directory>
+        	</Directory>
         ProxyRequests Off                     #httpd扮演的角色是反向代理，所以关闭正向代理
         ProxypassMatch /(.*\.php)$ fcgi://10.10.80.161:9000/apps/php/$1  #将php请求发往10.10.80.161:9000/apps/php/上
 	</VirtualHost>	
+
 
 
 	check：httpd -t
@@ -120,4 +121,8 @@
 	Connect Mysql Server :Success
 
 
+
+注意配置：
+	1、php测试  只能是php文件,html文件读不出来 
+	
 	something:http://www.178linux.com/51685
