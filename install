@@ -125,4 +125,10 @@
 注意配置：
 	1、php测试  只能是php文件,html文件读不出来 
 	
-	something:http://www.178linux.com/51685
+	
+9、安装wordpress：
+	要安装在httpd端相同的下
+	要安装在php-fpm下，而不是wordpress下
+
+
+something:http://www.178linux.com/51685
